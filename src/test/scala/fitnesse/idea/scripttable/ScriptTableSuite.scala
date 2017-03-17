@@ -8,20 +8,22 @@ import fitnesse.idea.filetype.FitnesseLanguage
 import fitnesse.idea.fixturemethod.ReturnType
 import fitnesse.idea.parser.FitnesseElementType
 import fitnesse.idea.psi.{FitnesseFile, MockIndexSink, PsiSuite}
-import fitnesse.idea.scenariotable.{ScenarioNameIndex, ScenarioName}
+import fitnesse.idea.scenariotable.{ScenarioName, ScenarioNameIndex}
 import fitnesse.idea.table.SimpleRow
 import org.mockito.Matchers.{any, anyBoolean, eq => m_eq}
+import org.mockito.Mockito
 import org.mockito.Mockito.when
+import org.scalatest.BeforeAndAfter
 
 import scala.collection.JavaConverters._
 
-class ScriptTableSuite extends PsiSuite {
+class ScriptTableSuite extends PsiSuite with BeforeAndAfter {
 
   val myPsiClass = mock[PsiClass]
   val myPsiMethodTwoWords = mock[PsiMethod]
 
-  override protected def beforeAll(): Unit = {
-    super.beforeAll()
+  before {
+    Mockito.reset(myPsiShortNamesCache, myPsiClass, myPsiMethodTwoWords)
 
     when(myPsiShortNamesCache.getAllClassNames()).thenReturn(Array("MyScriptTable"))
     when(myPsiShortNamesCache.getClassesByName(m_eq("MyScriptTable"), any[GlobalSearchScope])).thenReturn(Array(myPsiClass))

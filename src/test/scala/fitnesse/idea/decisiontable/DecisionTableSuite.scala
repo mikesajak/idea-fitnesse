@@ -11,11 +11,13 @@ import fitnesse.idea.scenariotable._
 import fitnesse.idea.scripttable._
 import fitnesse.idea.table.Table
 import org.mockito.Matchers.{any, anyBoolean, eq => m_eq}
+import org.mockito.Mockito
 import org.mockito.Mockito.when
+import org.scalatest.BeforeAndAfter
 
 import scala.collection.JavaConverters._
 
-class DecisionTableSuite extends PsiSuite {
+class DecisionTableSuite extends PsiSuite with BeforeAndAfter {
 
 
   val myPsiClass = mock[PsiClass]
@@ -26,8 +28,9 @@ class DecisionTableSuite extends PsiSuite {
 
   var table: Table = null
 
-  override protected def beforeAll(): Unit = {
-    super.beforeAll()
+  before {
+    Mockito.reset(myPsiShortNamesCache, myStubIndex, myPsiClass, myPsiMethodSetA, myPsiMethodC, myPsiMethodFancyLongName, myPsiMethodFancyQueryName)
+    // need to reset mocks before each test - FunSuite tests are not doing it by themselves
 
     when(myPsiShortNamesCache.getAllClassNames()).thenReturn(Array("DecisionTable"))
     when(myPsiShortNamesCache.getClassesByName(m_eq("DecisionTable"), any[GlobalSearchScope])).thenReturn(Array(myPsiClass))

@@ -6,9 +6,11 @@ import fitnesse.idea.fixturemethod.ReturnType
 import fitnesse.idea.psi.PsiSuite
 import fitnesse.idea.table.Table
 import org.mockito.Matchers.{any, anyBoolean, eq => m_eq}
+import org.mockito.Mockito
 import org.mockito.Mockito.when
+import org.scalatest.BeforeAndAfter
 
-class QueryTableSuite extends PsiSuite {
+class QueryTableSuite extends PsiSuite with BeforeAndAfter {
 
   val myPsiClass = mock[PsiClass]
   val myPsiMethodQuery = mock[PsiMethod]
@@ -16,9 +18,8 @@ class QueryTableSuite extends PsiSuite {
   var table: Table = null
   var output: QueryOutput = null
 
-  override protected def beforeAll(): Unit = {
-    super.beforeAll()
-
+  before {
+    Mockito.reset(myPsiShortNamesCache, myPsiClass)
     when(myPsiShortNamesCache.getAllClassNames()).thenReturn(Array("QueryTable"))
     when(myPsiShortNamesCache.getClassesByName(m_eq("QueryTable"), any[GlobalSearchScope])).thenReturn(Array(myPsiClass))
     when(myPsiClass.findMethodsByName(m_eq("query"), anyBoolean)).thenReturn(Array(myPsiMethodQuery))
