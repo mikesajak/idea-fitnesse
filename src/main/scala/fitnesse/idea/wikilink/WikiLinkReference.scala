@@ -27,7 +27,7 @@ class WikiLinkReference(element: WikiLink) extends PsiReferenceBase[WikiLink](el
     }
   }
 
-  override def getVariants = Array()
+  override def getVariants = Array.empty
 
   def resolvePathReference(baseDir: Option[PsiDirectory], path: Seq[String]): Option[PsiFile] = {
     val finalPage: String = path.last

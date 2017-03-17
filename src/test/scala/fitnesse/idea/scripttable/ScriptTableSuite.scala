@@ -23,6 +23,7 @@ class ScriptTableSuite extends PsiSuite {
   override protected def beforeAll(): Unit = {
     super.beforeAll()
 
+    when(myPsiShortNamesCache.getAllClassNames()).thenReturn(Array("MyScriptTable"))
     when(myPsiShortNamesCache.getClassesByName(m_eq("MyScriptTable"), any[GlobalSearchScope])).thenReturn(Array(myPsiClass))
   }
 

@@ -9,6 +9,7 @@ import fitnesse.idea.decisiontable.DecisionTable
 import fitnesse.idea.etc.Regracer
 import fitnesse.idea.etc.SearchScope.searchScope
 import fitnesse.idea.scenariotable.ScenarioNameIndex
+import fitnesse.idea.table.Table
 
 import scala.collection.JavaConversions._
 
@@ -17,9 +18,9 @@ class FixtureClassReference(referer: FixtureClass) extends PsiPolyVariantReferen
   val project = referer.getProject
   lazy val module = Option(ModuleUtilCore.findModuleForPsiElement(referer))
 
-  private def table = referer match {
+  private def table: Table = referer match {
     case impl: FixtureClassImpl => impl.table
-    case _ => new IllegalStateException("Expected a FixtureClassImpl referer")
+    case _ => throw new IllegalStateException("Expected a FixtureClassImpl referer")
   }
 
   // Return array of String, {@link PsiElement} and/or {@link LookupElement}
@@ -27,6 +28,7 @@ class FixtureClassReference(referer: FixtureClass) extends PsiPolyVariantReferen
     val allClassNames: Array[String] = PsiShortNamesCache.getInstance(project).getAllClassNames.filter(p => p != null).map(Regracer.regrace)
     table match {
       case _ : DecisionTable =>
+        // TODO: Really? all keys from project are needed (performance?)
         val scenarioNames =  ScenarioNameIndex.INSTANCE.getAllKeys(project).map(Regracer.regrace).toArray
         Array.concat(allClassNames, scenarioNames).asInstanceOf[Array[AnyRef]]
       case _ =>
@@ -61,19 +63,42 @@ class FixtureClassReference(referer: FixtureClass) extends PsiPolyVariantReferen
 
   private def createReference(element: PsiElement): ResolveResult = new PsiElementResolveResult(element)
 
-  protected def getReferencedClasses: Seq[ResolveResult] = fixtureClassName match {
+  protected def getReferencedClasses: Iterable[ResolveResult] = fixtureClassName match {
     case Some(className) if isQualifiedName =>
       JavaPsiFacade.getInstance(project).findClasses(className, FixtureClassReference.moduleWithDependenciesScope(module)).map(createReference)
     case Some(className) =>
-      PsiShortNamesCache.getInstance(project).getClassesByName(shortName.get, FixtureClassReference.moduleWithDependenciesScope(module)).map(createReference)
-    case None => Seq()
+      findFixtureClass2(shortName.get)
+    case None => Seq.empty
   }
 
+  private def findFixtureClass2(name: String): Iterable[ResolveResult] = {
+    val cache = PsiShortNamesCache.getInstance(project)
+    val res1 = Option(cache.getClassesByName(s"${name}Fixture", FixtureClassReference.moduleWithDependenciesScope(module)))
+    val res2 = Option(cache.getClassesByName(name, FixtureClassReference.moduleWithDependenciesScope(module)))
+    (res1 ++ res2).flatten.map(createReference)
+  }
+
+// other version - check performance
+//  private final val allClassNames = new HashSet[String]() // optimization
+//  private def findFixtureClass(name: String): Seq[ResolveResult] = {
+//    allClassNames.clear()
+//    PsiShortNamesCache.getInstance(project).getAllClassNames(allClassNames)
+//
+//    if (allClassNames.contains(s"${name}Fixture")) mkClassRefsFor(s"${name}Fixture")
+//    else if (allClassNames.contains(name)) mkClassRefsFor(name)
+//    else Seq.empty
+//  }
+//
+//  private def mkClassRefsFor(name: String) =
+//    PsiShortNamesCache.getInstance(project)
+//      .getClassesByName(name, FixtureClassReference.moduleWithDependenciesScope(module))
+//      .map(createReference)
+
   protected def getReferencedScenarios: Seq[ResolveResult] = referer.fixtureClassName match {
-    case Some(className) if isQualifiedName => Seq()
+    case Some(className) if isQualifiedName => Seq.empty
     case Some(className) =>
       ScenarioNameIndex.INSTANCE.get(className, project, FixtureClassReference.projectScope(project)).map(createReference).toSeq
-    case None => Seq()
+    case None => Seq.empty
   }
 
   override def handleElementRename(newElementName: String): PsiElement = referer.setName(newElementName)

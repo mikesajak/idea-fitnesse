@@ -19,6 +19,7 @@ class QueryTableSuite extends PsiSuite {
   override protected def beforeAll(): Unit = {
     super.beforeAll()
 
+    when(myPsiShortNamesCache.getAllClassNames()).thenReturn(Array("QueryTable"))
     when(myPsiShortNamesCache.getClassesByName(m_eq("QueryTable"), any[GlobalSearchScope])).thenReturn(Array(myPsiClass))
     when(myPsiClass.findMethodsByName(m_eq("query"), anyBoolean)).thenReturn(Array(myPsiMethodQuery))
 

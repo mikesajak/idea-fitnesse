@@ -25,17 +25,22 @@ class DecisionTableSuite extends PsiSuite {
   val myPsiMethodFancyQueryName = mock[PsiMethod]
 
   var table: Table = null
-  
+
   override protected def beforeAll(): Unit = {
     super.beforeAll()
 
+    when(myPsiShortNamesCache.getAllClassNames()).thenReturn(Array("DecisionTable"))
     when(myPsiShortNamesCache.getClassesByName(m_eq("DecisionTable"), any[GlobalSearchScope])).thenReturn(Array(myPsiClass))
     when(myPsiClass.findMethodsByName(m_eq("setA"), anyBoolean)).thenReturn(Array(myPsiMethodSetA))
     when(myPsiClass.findMethodsByName(m_eq("c"), anyBoolean)).thenReturn(Array(myPsiMethodC))
     when(myPsiClass.findMethodsByName(m_eq("setFancyLongName"), anyBoolean)).thenReturn(Array(myPsiMethodFancyLongName))
     when(myPsiClass.findMethodsByName(m_eq("fancyQueryName"), anyBoolean)).thenReturn(Array(myPsiMethodFancyQueryName))
 
-    table = createTable("| decision table |\n| a | b | c? | fancy long name | fancy query name? |\n| 1 | 2 | 3 |")
+    table = createTable(
+      """| decision table |
+        /| a | b | c? | fancy long name | fancy query name? |
+        /| 1 | 2 | 3 |
+        /""".stripMargin('/'))
   }
 
   test("find table name") {
