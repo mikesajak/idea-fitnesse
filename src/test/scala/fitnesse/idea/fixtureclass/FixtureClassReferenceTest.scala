@@ -1,9 +1,10 @@
 package fitnesse.idea.fixtureclass
 
 import com.intellij.openapi.project.Project
-import com.intellij.psi.PsiClass
+import com.intellij.psi._
 import com.intellij.psi.search.GlobalSearchScope
 import com.intellij.psi.stubs.StubBase
+import fitnesse.idea.fixturemethod.MethodReference
 import fitnesse.idea.psi.PsiSuite
 import fitnesse.idea.scenariotable.{ScenarioName, ScenarioNameElementType, ScenarioNameIndex, ScenarioNameStubImpl}
 import fitnesse.idea.table.Table
@@ -69,6 +70,69 @@ class FixtureClassReferenceTest extends PsiSuite with BeforeAndAfter {
 
     result should not be empty
     result.map(_.getElement) should contain only myPsiClass
+  }
+
+  // TODO: ugh, those ugly mocks, find better way to test it
+  test("resolve method and public field") {
+    val table = createTable(
+      """| table name|
+        /| field1 | field2    |
+        /| value1 | value2    |
+      """.stripMargin('/'))
+
+    val myPsiClass = mock[PsiClass]("TableName")
+    val field1Method = mock[PsiMethod]("getField1")
+    val field1Field = mock[PsiField]("field1")
+    val fieldModifierList = mock[PsiModifierList]
+
+    when(myPsiShortNamesCache.getAllClassNames()).thenReturn(Array("TableName"))
+    when(myPsiShortNamesCache.getClassesByName(m_eq("TableName"), any[GlobalSearchScope])).thenReturn(Array(myPsiClass))
+
+    when(myPsiClass.findMethodsByName(any[String], any[Boolean])).thenReturn(Array[PsiMethod]())
+    when(myPsiClass.findMethodsByName(m_eq("setField1"), any[Boolean])).thenReturn(Array(field1Method))
+
+    when(myPsiClass.findFieldByName(m_eq("field1"), any[Boolean])).thenReturn(field1Field)
+
+    when(field1Field.getModifierList).thenReturn(fieldModifierList)
+    when(fieldModifierList.hasExplicitModifier(PsiModifier.PUBLIC)).thenReturn(true)
+
+    val r = table.rows(1).cells(0).getReferences
+    val mr = r(0).asInstanceOf[MethodReference].multiResolve(true)
+
+    mr should not be empty
+    mr.map(_.isValidResult) should contain only true
+    mr.map(_.getElement) should contain inOrderOnly (field1Field, field1Method)
+  }
+
+  test("resolve method and privte field") {
+    val table = createTable(
+      """| table name|
+        /| field1 | field2?    |
+        /| value1 | value2    |
+      """.stripMargin('/'))
+
+    val myPsiClass = mock[PsiClass]("TableName")
+    val field2Method = mock[PsiMethod]("field2")
+    val field2Field = mock[PsiField]("field2")
+    val field2ModifierList = mock[PsiModifierList]
+
+    when(myPsiShortNamesCache.getAllClassNames()).thenReturn(Array("TableName"))
+    when(myPsiShortNamesCache.getClassesByName(m_eq("TableName"), any[GlobalSearchScope])).thenReturn(Array(myPsiClass))
+
+    when(myPsiClass.findMethodsByName(any[String], any[Boolean])).thenReturn(Array[PsiMethod]())
+    when(myPsiClass.findMethodsByName(m_eq("field2"), any[Boolean])).thenReturn(Array(field2Method))
+
+    when(myPsiClass.findFieldByName(m_eq("field2"), any[Boolean])).thenReturn(field2Field)
+
+    when(field2Field.getModifierList).thenReturn(field2ModifierList)
+    when(field2ModifierList.hasExplicitModifier(PsiModifier.PUBLIC)).thenReturn(false)
+
+    val r = table.rows(1).cells(1).getReferences()
+    val mr = r(0).asInstanceOf[MethodReference].multiResolve(true)
+
+    mr should not be empty
+    mr.map(_.isValidResult) should contain only true
+    mr.map(_.getElement) should contain only field2Method
   }
 
   test("completion options for a fixture class") {
