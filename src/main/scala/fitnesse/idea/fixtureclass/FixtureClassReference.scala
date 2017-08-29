@@ -5,6 +5,7 @@ import com.intellij.openapi.project.Project
 import com.intellij.openapi.util.TextRange
 import com.intellij.psi._
 import com.intellij.psi.search.{GlobalSearchScope, PsiShortNamesCache}
+import fitnesse.idea.config.FitNessePluginConfig
 import fitnesse.idea.decisiontable.DecisionTable
 import fitnesse.idea.etc.Regracer
 import fitnesse.idea.etc.SearchScope.searchScope
@@ -73,7 +74,8 @@ class FixtureClassReference(referer: FixtureClass) extends PsiPolyVariantReferen
 
   private def findFixtureClass2(name: String): Iterable[ResolveResult] = {
     val cache = PsiShortNamesCache.getInstance(project)
-    val res1 = Option(cache.getClassesByName(s"${name}Fixture", FixtureClassReference.moduleWithDependenciesScope(module)))
+    val fixtureClassSuffix = FitNessePluginConfig.getInstance.fixtureSuffix
+    val res1 = Option(cache.getClassesByName(s"$name$fixtureClassSuffix", FixtureClassReference.moduleWithDependenciesScope(module)))
     val res2 = Option(cache.getClassesByName(name, FixtureClassReference.moduleWithDependenciesScope(module)))
     (res1 ++ res2).flatten.map(createReference)
   }
